@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantDoctorAI | Profesyonel Zirai Teşhis Platformu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- HTML2PDF Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- LEAFLET.JS (GIS HARİTA MOTORU) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        :root {
+            --bg-body: #080b11;
+            --surface-panel: #0f1420;
+            --surface-card: #141b2b;
+            --surface-hover: #1a2337;
+            --border-dim: #1e293b;
+            --border-highlight: #2c3b55;
+            
+            --brand-green: #10b981;
+            --brand-green-hover: #059669;
+            --brand-glow: rgba(16, 185, 129, 0.12);
+            --danger-red: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --warning-amber: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.12);
+            
+            --text-pure: #ffffff;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            height: 68px;
+            background: rgba(15, 20, 32, 0.9);
+            border-bottom: 1px solid var(--border-dim);
+            backdrop-filter: blur(14px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 36px;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .brand-icon {
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-name {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-pure);
+        }
+
+        .brand-name span {
+            color: var(--brand-green);
+        }
+
+        nav.nav-links {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-link-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .nav-link-btn:hover {
+            color: var(--text-pure);
+            background: var(--surface-hover);
+        }
+
+        .nav-link-btn.active {
+            color: var(--brand-green);
+        }
+
+        .nav-link-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -14px;
+            left: 16px;
+            right: 16px;
+            height: 2px;
+            background: var(--brand-green);
+            box-shadow: 0 0 8px var(--brand-green);
+        }
+
+        .user-session-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .operator-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .operator-label span {
+            color: var(--text-pure);
+        }
+
+        .btn-auth-action {
+            background: var(--surface-card);
+            border: 1px solid var(--border-dim);
+            color: var(--text-pure);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 7px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-auth-action:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-highlight);
+        }
+
+        main {
+            flex: 1;
+            max-width: 1440px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 36px 40px;
+        }
+
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1.05fr 1fr;
+            gap: 28px;
+            align-items: start;
+        }
+
+        .card-panel {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .panel-heading {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-pure);
+            letter-spacing: -0.3px;
+            margin-bottom: 20px;
+        }
+
+        .scanner-viewport {
+            width: 100%;
+            height: 440px;
+            background: #090c13;
+            border: 1px solid var(--border-dim);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .scanner-viewport:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .viewport-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            z-index: 2;
+        }
+
+        .reticle-corner {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-color: var(--brand-green);
+            border-style: solid;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.85;
+        }
+        .reticle-corner.top-left { top: 22px; left: 22px; border-width: 2.5px 0 0 2.5px; }
+        .reticle-corner.top-right { top: 22px; right: 22px; border-width: 2.5px 2.5px 0 0; }
+        .reticle-corner.bottom-left { bottom: 22px; left: 22px; border-width: 0 0 2.5px 2.5px; }
+        .reticle-corner.bottom-right { bottom: 22px; right: 22px; border-width: 0 2.5px 2.5px 0; }
+
+        .reticle-crosshair {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.5;
+        }
+        .reticle-crosshair::before { content:''; position:absolute; top:8px; left:0; width:18px; height:2px; background:var(--brand-green); }
+        .reticle-crosshair::after { content:''; position:absolute; left:8px; top:0; width:2px; height:18px; background:var(--brand-green); }
+        .reticle-crosshair.tl { top: 26px; left: 26px; }
+        .reticle-crosshair.tr { top: 26px; right: 26px; }
+        .reticle-crosshair.bl { bottom: 26px; left: 26px; }
+        .reticle-crosshair.br { bottom: 26px; right: 26px; }
+
+        .scan-laser-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #10b981 30%, #34d399 50%, #10b981 70%, transparent);
+            box-shadow: 0 0 14px #10b981, 0 0 24px rgba(16, 185, 129, 0.6);
+            opacity: 0;
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        .scan-laser-line.running {
+            opacity: 1;
+            animation: laserSweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+        }
+
+        @keyframes laserSweep {
+            0% { top: 6%; }
+            100% { top: 94%; }
+        }
+
+        .upload-idle-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            pointer-events: none;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        .upload-idle-icon {
+            width: 52px;
+            height: 52px;
+            stroke: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .toggle-switch-group {
+            display: flex;
+            background: #090c13;
+            border: 1px solid var(--border-dim);
+            padding: 4px;
+            border-radius: 10px;
+            margin-top: 18px;
+            gap: 6px;
+        }
+
+        .toggle-pill-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-pill-btn.active {
+            background: var(--surface-card);
+            color: var(--text-pure);
+            border: 1px solid var(--border-highlight);
+        }
+
+        .btn-launch-analysis {
+            width: 100%;
+            background: var(--brand-green);
+            color: #042417;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            margin-top: 16px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-launch-analysis:hover {
+            background: var(--brand-green-hover);
+        }
+
+        .btn-launch-analysis:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-pdf-download {
+            width: 100%;
+            background: #1e293b;
+            color: #38bdf8;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            margin-top: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-pdf-download:hover {
+            background: #27354f;
+            border-color: #38bdf8;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2);
+        }
+
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .diagnosis-header-card {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 16px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .diagnosis-title-wrap h2 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-pure);
+            letter-spacing: -0.4px;
+        }
+
+        .diagnosis-title-wrap p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .badge-cluster {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.2px;
+        }
+
+        .status-pill.danger {
+            background: var(--danger-bg);
+            color: var(--danger-red);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .status-pill.healthy {
+            background: var(--brand-glow);
+            color: var(--brand-green);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .risk-sub-tag {
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning-amber);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .telemetry-card {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 112px;
+        }
+
+        .telemetry-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .telemetry-val-primary {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-pure);
+            letter-spacing: -0.5px;
+            margin: 6px 0 2px;
+        }
+
+        .telemetry-val-primary.species {
+            font-size: 18px;
+            line-height: 1.3;
+            margin-top: 8px;
+        }
+
+        .telemetry-sub-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .sparkline-icon {
+            stroke: var(--brand-green);
+            width: 24px;
+            height: 16px;
+        }
+
+        .treatment-protocol-card {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 16px;
+            padding: 22px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .protocol-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border-dim);
+        }
+
+        .protocol-row {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .protocol-row strong {
+            color: var(--text-pure);
+            font-weight: 700;
+            margin-right: 4px;
+        }
+
+        .subview-card {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .subview-header {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-pure);
+            margin-bottom: 6px;
+        }
+
+        .subview-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .input-text {
+            background: var(--surface-card);
+            border: 1px solid var(--border-dim);
+            color: var(--text-pure);
+            font-family: inherit;
+            font-size: 14px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .input-text:focus {
+            border-color: var(--brand-green);
+        }
+
+        .history-table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border-dim);
+            border-radius: 12px;
+            margin-top: 12px;
+        }
+
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        .styled-table th {
+            background: #090c13;
+            color: var(--text-secondary);
+            font-weight: 700;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-dim);
+        }
+
+        .styled-table td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-dim);
+            color: var(--text-primary);
+        }
+
+        .styled-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* HARİTA STİLLERİ */
+        #gisMapContainer {
+            width: 100%;
+            height: 520px;
+            border-radius: 12px;
+            border: 1px solid var(--border-dim);
+            z-index: 1;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: #0f1420 !important;
+            color: #f1f5f9 !important;
+            border: 1px solid #10b981 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: #0f1420 !important;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 6, 10, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal-card {
+            background: var(--surface-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-dim);
+            padding-bottom: 14px;
+            margin-bottom: 22px;
+        }
+
+        .modal-tab-btn {
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding-bottom: 4px;
+        }
+
+        .modal-tab-btn.active {
+            color: var(--brand-green);
+            border-bottom: 2px solid var(--brand-green);
+        }
+
+        .modal-close-x {
+            position: absolute;
+            top: 22px;
+            right: 22px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #pdfReportTemplate {
+            display: none;
+            background: #ffffff;
+            color: #0f172a;
+            padding: 36px 40px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            width: 780px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-box" onclick="navigateTo('tehis')">
+            <span class="brand-icon">🌱</span>
+            <div class="brand-name">PlantDoctor<span>AI</span></div>
+        </div>
+
+        <nav class="nav-links">
+            <button class="nav-link-btn active" id="nav-tehis" onclick="navigateTo('tehis')">Teşhis & Tarama</button>
+            <button class="nav-link-btn" id="nav-sensor" onclick="navigateTo('sensor')">Saha Telemetrisi</button>
+            <button class="nav-link-btn" id="nav-harita" onclick="navigateTo('harita')">Saha Haritası (GIS)</button>
+            <button class="nav-link-btn" id="nav-gecmis" onclick="navigateTo('gecmis')">Teşhis Günlüğü</button>
+            <button class="nav-link-btn" id="nav-ayarlar" onclick="navigateTo('ayarlar')">Sistem Yapılandırması</button>
+        </nav>
+
+        <div class="user-session-bar">
+            <div class="operator-label" id="userDisplayWrap">
+                Operatör: <span id="operatorNameText">Misafir Kullanıcı</span>
+            </div>
+            <button class="btn-auth-action" id="btnAuthToggle" onclick="toggleAuthModal()">Giriş Yap</button>
+        </div>
+    </header>
+
+    <main>
+        
+        <!-- 1. GÖRÜNÜM: TEŞHİS & TARAMA -->
+        <div class="view-section active" id="view-tehis">
+            <div class="workspace-grid">
+                
+                <div class="card-panel">
+                    <div class="panel-heading">Optik Spektrometre & Görüntüleme</div>
+
+                    <div class="scanner-viewport" onclick="document.getElementById('hiddenFileInput').click()">
+                        <div class="reticle-corner top-left"></div>
+                        <div class="reticle-corner top-right"></div>
+                        <div class="reticle-corner bottom-left"></div>
+                        <div class="reticle-corner bottom-right"></div>
+
+                        <div class="reticle-crosshair tl"></div>
+                        <div class="reticle-crosshair tr"></div>
+                        <div class="reticle-crosshair bl"></div>
+                        <div class="reticle-crosshair br"></div>
+
+                        <div class="scan-laser-line" id="laserBeam"></div>
+
+                        <div class="upload-idle-state" id="uploadIdlePrompt">
+                            <svg class="upload-idle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p style="font-size: 14px; font-weight: 600; color: var(--text-primary);">Analiz için yaprak örneği seçin</p>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">PNG, JPG formatları desteklenir</p>
+                        </div>
+
+                        <img id="rawLeafImg" class="viewport-image" alt="Optik Ham Görsel">
+                        <img id="camHeatmapImg" class="viewport-image" alt="Grad-CAM Isı Haritası">
+                        <input type="file" id="hiddenFileInput" accept="image/*" style="display: none;" onchange="onLeafUploaded(event)">
+                    </div>
+
+                    <div class="toggle-switch-group">
+                        <button class="toggle-pill-btn active" id="btnModeRaw" onclick="setViewportMode('raw')">Optik Veri (Ham Görsel)</button>
+                        <button class="toggle-pill-btn" id="btnModeCam" onclick="setViewportMode('cam')">XAI Isı Haritası (Grad-CAM)</button>
+                    </div>
+
+                    <button class="btn-launch-analysis" id="btnRunDiagnosis" onclick="executeDiagnosis()">Zirai Analizi Başlat</button>
+                    <button class="btn-pdf-download" id="btnDownloadPdf" onclick="downloadPdfReport()">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Resmi Zirai Reçete & PDF Raporu İndir
+                    </button>
+                </div>
+
+                <div class="results-container">
+                    
+                    <div class="diagnosis-header-card">
+                        <div class="diagnosis-title-wrap">
+                            <h2 id="diagHeaderName">Domates Erken Yanıklığı</h2>
+                            <p id="diagHeaderLatin">(Alternaria solani)</p>
+                        </div>
+                        <div class="badge-cluster">
+                            <span class="status-pill danger" id="statusBadge">Enfeksiyon Tespit Edildi</span>
+                            <span class="risk-sub-tag" id="riskSubTag">Yüksek Risk</span>
+                        </div>
+                    </div>
+
+                    <div class="telemetry-grid">
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">
+                                <span>Tanımlanan Tür</span>
+                                <span>🌿</span>
+                            </div>
+                            <div class="telemetry-val-primary species" id="metaPlantSpecies">
+                                Solanum lycopersicum<br><span style="font-size: 14px; color: var(--text-secondary); font-weight: 600;">(Domates)</span>
+                            </div>
+                            <div class="telemetry-sub-meta" id="metaBotanySource">Pl@ntNet Taksonomisi</div>
+                        </div>
+
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">
+                                <span>Yapay Zeka Güven Oranı</span>
+                                <span>🛡️</span>
+                            </div>
+                            <div class="telemetry-val-primary" id="metaConfidence">%97.8</div>
+                            <div class="telemetry-sub-meta">ResNet-50 Derin Öğrenme Modeli</div>
+                        </div>
+
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">
+                                <span>Ortam Sıcaklığı</span>
+                                <svg class="sparkline-icon" viewBox="0 0 24 16" fill="none">
+                                    <path d="M1 12L7 4L13 10L23 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="telemetry-val-primary" id="metaTemp">23.5 °C</div>
+                            <div class="telemetry-sub-meta">Saha Ölçümü (Optimal Aralık)</div>
+                        </div>
+
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">
+                                <span>Bağıl Nem</span>
+                                <span style="color: var(--brand-green);">💧</span>
+                            </div>
+                            <div class="telemetry-val-primary" id="metaHumidity">%82</div>
+                            <div class="telemetry-sub-meta">Spor Yayılım Riski Eşiği</div>
+                        </div>
+                    </div>
+
+                    <div class="treatment-protocol-card">
+                        <div class="protocol-title">UZMAN KARAR DESTEK PROTOKOLÜ</div>
+                        
+                        <div class="protocol-row" id="rowSymptoms">
+                            <strong>Klinik Semptomlar:</strong> Yapraklarda konsantrik halkalı koyu kahverengi nekrotik lekeler.
+                        </div>
+
+                        <div class="protocol-row" id="rowBio">
+                            <strong>Biyolojik Mücadele:</strong> Hastalıklı bitki artıklarını imha edin, damla sulamaya geçin ve havalandırmayı artırın.
+                        </div>
+
+                        <div class="protocol-row" id="rowChem">
+                            <strong>Kimyasal Mücadele:</strong> Bakır içerikli fungisitler veya ruhsatlı etken maddeler (Mancozeb) ile ilaçlama tavsiye edilir.
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 2. GÖRÜNÜM: SAHA TELEMETRİSİ -->
+        <div class="view-section" id="view-sensor">
+            <div class="subview-card">
+                <div class="subview-header">Saha Mikroklima & Telemetri Ayarları</div>
+                <div class="subview-desc">Sensörlerden veya GPS ile canlı meteoroloji uydusundan alınan canlı parametreleri yönetin.</div>
+
+                <div class="form-grid-2">
+                    <div class="field-group">
+                        <label>Ortam Sıcaklığı (°C)</label>
+                        <input type="number" id="inputTemp" class="input-text" value="23.5" step="0.5">
+                    </div>
+                    <div class="field-group">
+                        <label>Hava Bağıl Nemi (%)</label>
+                        <input type="number" id="inputHum" class="input-text" value="82" step="1">
+                    </div>
+                    <div class="field-group">
+                        <label>GPS Enlem (Latitude)</label>
+                        <input type="text" id="inputLat" class="input-text" value="40.8438">
+                    </div>
+                    <div class="field-group">
+                        <label>GPS Boylam (Longitude)</label>
+                        <input type="text" id="inputLon" class="input-text" value="31.1565">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 14px; margin-top: 24px; flex-wrap: wrap;">
+                    <button class="btn-launch-analysis" style="width: auto; padding: 12px 28px; margin-top: 0;" onclick="saveSensorTelemetry()">
+                        Değerleri Kaydet ve Eşitle
+                    </button>
+                    <button type="button" class="btn-launch-analysis" style="width: auto; padding: 12px 24px; margin-top: 0; background: #0284c7; color: white;" onclick="fetchLiveGpsAndWeather(event)">
+                        🛰️ Canlı GPS ve Hava Durumunu Çek
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. GÖRÜNÜM: SAHA HARİTASI (GIS) -->
+        <div class="view-section" id="view-harita">
+            <div class="subview-card" style="max-width: 1100px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div class="subview-header" style="margin-bottom: 0;">Saha Enfeksiyon & Teşhis Haritası (GIS)</div>
+                    <div style="display: flex; gap: 14px; font-size: 12px; font-weight: 700;">
+                        <span style="display: flex; align-items: center; gap: 6px; color: var(--brand-green);">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--brand-green); display: inline-block;"></span> Sağlıklı Bitkiler
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 6px; color: var(--danger-red);">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--danger-red); display: inline-block;"></span> Enfeksiyon / Salgın Noktası
+                        </span>
+                    </div>
+                </div>
+                <div class="subview-desc">Veritabanında kayıtlı GPS konumlarına göre tarladaki hastalık yayılım haritası.</div>
+
+                <div id="gisMapContainer"></div>
+            </div>
+        </div>
+
+        <!-- 4. GÖRÜNÜM: TEŞHİS GÜNLÜĞÜ -->
+        <div class="view-section" id="view-gecmis">
+            <div class="subview-card" style="max-width: 1100px;">
+                <div class="subview-header">Geçmiş Teşhis Kayıtları</div>
+                <div class="subview-desc">SQLite veri tabanında saklanan doğrulanmış zirai analiz kayıtları.</div>
+
+                <div class="history-table-wrapper">
+                    <table class="styled-table">
+                        <thead>
+                            <tr>
+                                <th>TARİH</th>
+                                <th>TEŞHİS EDİLEN HASTALIK</th>
+                                <th>GÜVEN ORANI</th>
+                                <th>MİKROKLİMA</th>
+                                <th>RİSK DEĞERLENDİRMESİ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTbody">
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Kayıtlar yükleniyor...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. GÖRÜNÜM: SİSTEM YAPILANDIRMASI -->
+        <div class="view-section" id="view-ayarlar">
+            <div class="subview-card">
+                <div class="subview-header">Sistem ve Model Mimarisi</div>
+                <div class="subview-desc">PlantDoctorAI çekirdek derin öğrenme ve API entegrasyon ayarları.</div>
+
+                <div style="display: flex; flex-direction: column; gap: 18px;">
+                    <div class="field-group">
+                        <label>Çıkarım Modeli (Inference Engine)</label>
+                        <input type="text" class="input-text" value="PyTorch ResNet-50 (38 Sınıf / Transfer Learning)" disabled>
+                    </div>
+                    <div class="field-group">
+                        <label>Açıklanabilir Yapay Zeka Katmanı (XAI)</label>
+                        <input type="text" class="input-text" value="Grad-CAM (Layer4 Activation Maps)" disabled>
+                    </div>
+                    <div class="field-group">
+                        <label>Taksonomi Doğrulama Sağlayıcısı</label>
+                        <input type="text" class="input-text" value="Pl@ntNet API REST Service (v2/identify)" disabled>
+                    </div>
+                    <div class="field-group">
+                        <label>Veri Tabanı Motoru</label>
+                        <input type="text" class="input-text" value="SQLite3 (plant_doctor.db)" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- AUTH MODAL -->
+    <div class="modal-backdrop" id="authModal">
+        <div class="modal-card">
+            <button class="modal-close-x" onclick="toggleAuthModal()">✕</button>
+            
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" id="tabBtnLogin" onclick="switchAuthMode('login')">GİRİŞ YAP</button>
+                <button class="modal-tab-btn" id="tabBtnRegister" onclick="switchAuthMode('register')">KAYIT OL</button>
+            </div>
+
+            <div id="loginFormArea">
+                <div class="field-group" style="margin-bottom: 14px;">
+                    <label>E-posta Adresi</label>
+                    <input type="email" id="authLoginEmail" class="input-text" placeholder="ahmet@agritech.com">
+                </div>
+                <div class="field-group" style="margin-bottom: 20px;">
+                    <label>Şifre</label>
+                    <input type="password" id="authLoginPass" class="input-text" placeholder="••••••••">
+                </div>
+                <button class="btn-launch-analysis" onclick="handleLoginSubmit()">Oturum Aç</button>
+            </div>
+
+            <div id="registerFormArea" style="display: none;">
+                <div class="field-group" style="margin-bottom: 14px;">
+                    <label>Ad Soyad</label>
+                    <input type="text" id="authRegName" class="input-text" placeholder="Ahmet Yılmaz">
+                </div>
+                <div class="field-group" style="margin-bottom: 14px;">
+                    <label>E-posta Adresi</label>
+                    <input type="email" id="authRegEmail" class="input-text" placeholder="ahmet@agritech.com">
+                </div>
+                <div class="field-group" style="margin-bottom: 20px;">
+                    <label>Şifre</label>
+                    <input type="password" id="authRegPass" class="input-text" placeholder="••••••••">
+                </div>
+                <button class="btn-launch-analysis" onclick="handleRegisterSubmit()">Hesap Oluştur</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF BASKI İÇİN HAZIRLANAN GİZLİ ŞABLON -->
+    <div id="pdfReportTemplate">
+        <div style="border-bottom: 2px solid #10b981; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <h1 style="color: #064e3b; font-size: 24px; font-weight: 800; margin: 0;">🌱 PlantDoctorAI</h1>
+                <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Resmi Zirai Teşhis, Epidemiyolojik Risk & Tedavi Reçetesi</p>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #475569;">
+                <p><strong>Tarih:</strong> <span id="pdfDate"></span></p>
+                <p><strong>Operatör:</strong> <span id="pdfOperator"></span></p>
+                <p><strong>Konum:</strong> <span id="pdfGps"></span></p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+                <p style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px;">Optik Ham Görsel</p>
+                <img id="pdfRawImg" style="width: 100%; height: 180px; object-fit: contain; border-radius: 6px;" alt="Ham Görsel">
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+                <p style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px;">Grad-CAM Isı Haritası (XAI)</p>
+                <img id="pdfCamImg" style="width: 100%; height: 180px; object-fit: contain; border-radius: 6px;" alt="Isı Haritası">
+            </div>
+        </div>
+
+        <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 14px; border-radius: 6px; margin-bottom: 18px;">
+            <h2 style="font-size: 18px; color: #065f46; margin: 0;" id="pdfDiseaseName">Domates Erken Yanıklığı</h2>
+            <div style="display: flex; gap: 20px; font-size: 12px; color: #166534; margin-top: 6px;">
+                <span><strong>Tür:</strong> <span id="pdfSpecies">Domates</span></span>
+                <span><strong>Güven Skoru:</strong> <span id="pdfConfidence">%97.8</span></span>
+                <span><strong>Mikroklima:</strong> <span id="pdfTelemetry">23.5°C / %82 Nem</span></span>
+            </div>
+            <p style="font-size: 11px; color: #b91c1c; font-weight: 700; margin-top: 6px;" id="pdfRiskText"></p>
+        </div>
+
+        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h3 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 10px;">
+                Zirai Karar Destek ve Mücadele Protokolü
+            </h3>
+            <p style="font-size: 12px; line-height: 1.6; color: #334155; margin-bottom: 8px;" id="pdfSymptoms">
+                <strong>Semptomlar:</strong> -
+            </p>
+            <p style="font-size: 12px; line-height: 1.6; color: #15803d; margin-bottom: 8px;" id="pdfBio">
+                <strong>Biyolojik & Kültürel Önlemler:</strong> -
+            </p>
+            <p style="font-size: 12px; line-height: 1.6; color: #b91c1c; margin-bottom: 8px;" id="pdfChem">
+                <strong>Ruhsatlı Kimyasal Tedavi:</strong> -
+            </p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 10px; color: #94a3b8;">
+            <span>Bu rapor PyTorch ResNet-50 ve Grad-CAM yapay zeka çıkarımı ile üretilmiştir.</span>
+            <span>PlantDoctorAI Dijital Onaylıdır</span>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT CONTROLLER -->
+    <script>
+        let selectedFileBlob = null;
+        let activeOperator = null;
+        let lastDiagnosisResponse = null;
+        let leafletMap = null;
+        let mapMarkersLayer = null;
+
+        try {
+            const rawStored = localStorage.getItem("plant_operator");
+            if (rawStored) {
+                activeOperator = JSON.parse(rawStored);
+            }
+        } catch (e) {
+            console.warn("Geçersiz oturum verisi sıfırlandı:", e);
+            localStorage.removeItem("plant_operator");
+            activeOperator = null;
+        }
+
+        window.onload = function() {
+            refreshSessionUI();
+            fetchUserHistory();
+        };
+
+        function navigateTo(targetViewId) {
+            document.querySelectorAll(".view-section").forEach(sec => sec.classList.remove("active"));
+            document.querySelectorAll(".nav-link-btn").forEach(btn => btn.classList.remove("active"));
+
+            const targetSection = document.getElementById("view-" + targetViewId);
+            const targetNav = document.getElementById("nav-" + targetViewId);
+
+            if (targetSection && targetNav) {
+                targetSection.classList.add("active");
+                targetNav.classList.add("active");
+            }
+
+            if (targetViewId === 'gecmis') {
+                fetchUserHistory();
+            } else if (targetViewId === 'harita') {
+                initOrRefreshGisMap();
+            }
+        }
+
+        function setViewportMode(mode) {
+            const rawImg = document.getElementById("rawLeafImg");
+            const camImg = document.getElementById("camHeatmapImg");
+            const btnRaw = document.getElementById("btnModeRaw");
+            const btnCam = document.getElementById("btnModeCam");
+
+            if (mode === 'raw') {
+                if (rawImg && rawImg.src) rawImg.style.display = "block";
+                if (camImg) camImg.style.display = "none";
+                if (btnRaw) btnRaw.classList.add("active");
+                if (btnCam) btnCam.classList.remove("active");
+            } else if (mode === 'cam') {
+                if (rawImg) rawImg.style.display = "none";
+                if (camImg && camImg.src) camImg.style.display = "block";
+                if (btnCam) btnCam.classList.add("active");
+                if (btnRaw) btnRaw.classList.remove("active");
+            }
+        }
+
+        function onLeafUploaded(event) {
+            if (event.target.files && event.target.files.length > 0) {
+                selectedFileBlob = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const rawView = document.getElementById("rawLeafImg");
+                    rawView.src = e.target.result;
+                    rawView.style.display = "block";
+
+                    document.getElementById("camHeatmapImg").style.display = "none";
+                    document.getElementById("uploadIdlePrompt").style.display = "none";
+
+                    setViewportMode('raw');
+                };
+                reader.readAsDataURL(selectedFileBlob);
+            }
+        }
+
+        async function executeDiagnosis() {
+            if (!selectedFileBlob) {
+                alert("Lütfen önce analiz için bir yaprak numunesi seçin.");
+                return;
+            }
+
+            const btn = document.getElementById("btnRunDiagnosis");
+            const laser = document.getElementById("laserBeam");
+
+            btn.disabled = true;
+            btn.innerText = "Yapay Zeka Analiz Ediyor...";
+            if (laser) laser.classList.add("running");
+
+            const formData = new FormData();
+            formData.append("image", selectedFileBlob);
+            
+            const tempVal = parseFloat(document.getElementById("inputTemp").value) || 24.0;
+            const humVal = parseFloat(document.getElementById("inputHum").value) || 82.0;
+            const latVal = parseFloat(document.getElementById("inputLat").value) || 40.8438;
+            const lonVal = parseFloat(document.getElementById("inputLon").value) || 31.1565;
+
+            formData.append("temp", tempVal);
+            formData.append("humidity", humVal);
+            formData.append("lat", latVal);
+            formData.append("lon", lonVal);
+
+            if (activeOperator && activeOperator.id) {
+                formData.append("user_id", String(activeOperator.id));
+            }
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/api/teshis", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Sunucu yanıtı başarısız.");
+                const data = await response.json();
+                lastDiagnosisResponse = data;
+                renderDiagnosisData(data);
+
+                setTimeout(() => {
+                    fetchUserHistory();
+                }, 300);
+
+            } catch (err) {
+                console.warn("Flask API çevrimdışı:", err);
+                alert("Analiz sırasında hata oluştu. Lütfen Flask sunucusunun açık olduğunu kontrol edin.");
+            } finally {
+                setTimeout(() => {
+                    if (laser) laser.classList.remove("running");
+                    btn.disabled = false;
+                    btn.innerText = "Zirai Analizi Başlat";
+                }, 1000);
+            }
+        }
+
+        function renderDiagnosisData(data) {
+            const diseaseName = data.teshis.turkce_ad;
+            document.getElementById("diagHeaderName").innerText = diseaseName;
+            document.getElementById("metaConfidence").innerText = data.teshis.guven_skoru;
+
+            const isHealthy = diseaseName.toLowerCase().includes("sağlıklı");
+            const badge = document.getElementById("statusBadge");
+            const riskTag = document.getElementById("riskSubTag");
+
+            if (isHealthy) {
+                badge.className = "status-pill healthy";
+                badge.innerText = "Sağlıklı Bitki";
+                riskTag.innerText = "Normal Saha Koşulu";
+                riskTag.style.color = "var(--brand-green)";
+                riskTag.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                riskTag.style.background = "rgba(16, 185, 129, 0.12)";
+            } else {
+                badge.className = "status-pill danger";
+                badge.innerText = "Enfeksiyon Tespit Edildi";
+                riskTag.innerText = "Yüksek Risk";
+                riskTag.style.color = "var(--warning-amber)";
+                riskTag.style.borderColor = "rgba(245, 158, 11, 0.4)";
+                riskTag.style.background = "rgba(245, 158, 11, 0.15)";
+            }
+
+            if (data.tedavi_onerileri && data.tedavi_onerileri.bitki_turu) {
+                document.getElementById("metaPlantSpecies").innerHTML = `${data.tedavi_onerileri.bitki_turu}`;
+            }
+
+            if (data.isi_haritasi) {
+                document.getElementById("camHeatmapImg").src = data.isi_haritasi;
+            }
+
+            if (data.tedavi_onerileri) {
+                if (data.tedavi_onerileri.belirtiler) {
+                    document.getElementById("rowSymptoms").innerHTML = `<strong>Klinik Semptomlar:</strong> ${data.tedavi_onerileri.belirtiler}`;
+                }
+                if (data.tedavi_onerileri.biyolojik_tedavi) {
+                    document.getElementById("rowBio").innerHTML = `<strong>Biyolojik Mücadele:</strong> ${data.tedavi_onerileri.biyolojik_tedavi}`;
+                }
+                if (data.tedavi_onerileri.kimyasal_tedavi) {
+                    document.getElementById("rowChem").innerHTML = `<strong>Kimyasal Mücadele:</strong> ${data.tedavi_onerileri.kimyasal_tedavi}`;
+                }
+            }
+        }
+
+        // CANLI GPS VE METEOROLOJİ ÇEKME FONKSİYONU
+        function fetchLiveGpsAndWeather(e) {
+            if (!navigator.geolocation) {
+                alert("Tarayıcınız GPS konum servisini desteklemiyor.");
+                return;
+            }
+
+            const btn = e.target;
+            const oldText = btn.innerText;
+            btn.innerText = "🛰️ GPS & Hava Çekiliyor...";
+            btn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude.toFixed(4);
+                    const lon = position.coords.longitude.toFixed(4);
+
+                    document.getElementById("inputLat").value = lat;
+                    document.getElementById("inputLon").value = lon;
+
+                    try {
+                        const res = await fetch(`http://127.0.0.1:5000/api/hava-durumu?lat=${lat}&lon=${lon}`);
+                        const data = await res.json();
+
+                        if (data.sicaklik !== undefined && data.nem !== undefined) {
+                            document.getElementById("inputTemp").value = data.sicaklik;
+                            document.getElementById("inputHum").value = data.nem;
+                            document.getElementById("metaTemp").innerText = `${data.sicaklik} °C`;
+                            document.getElementById("metaHumidity").innerText = `%${data.nem}`;
+                            alert(`Canlı Konum ve Hava Güncellendi!\n📍 Koordinat: ${lat}, ${lon}\n🌡️ Sıcaklık: ${data.sicaklik}°C | 💧 Nem: %${data.nem}`);
+                        }
+                    } catch (err) {
+                        console.warn("Hava durumu API hatası:", err);
+                        alert("Konum alındı ancak canlı meteoroloji servisine ulaşılamadı.");
+                    } finally {
+                        btn.innerText = oldText;
+                        btn.disabled = false;
+                    }
+                },
+                (error) => {
+                    console.warn("Konum izni hatası:", error);
+                    alert("Konum izni alınamadı. Lütfen tarayıcıdan konum iznini onaylayın.");
+                    btn.innerText = oldText;
+                    btn.disabled = false;
+                },
+                { timeout: 10000 }
+            );
+        }
+
+        // LEAFLET GIS HARİTA YÖNETİMİ
+        async function initOrRefreshGisMap() {
+            const container = document.getElementById("gisMapContainer");
+            if (!container) return;
+
+            // Harita henüz oluşturulmadıysa ilk kurulum
+            if (!leafletMap) {
+                leafletMap = L.map('gisMapContainer').setView([40.8438, 31.1565], 8);
+
+                // Koyu tema uyumlu OpenStreetMap harita katmanı
+                // Tamamen ücretsiz, API anahtarı istemeyen koyu tema harita katmanı
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 16,
+                    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ | PlantDoctorAI GIS'
+                }).addTo(leafletMap);
+
+                mapMarkersLayer = L.layerGroup().addTo(leafletMap);
+            }
+
+            // Sekme açıldığında haritanın gri kalmaması için yeniden boyutlandır
+            setTimeout(() => {
+                leafletMap.invalidateSize();
+            }, 250);
+
+            // Veritabanındaki kayıtları çekip haritaya pin olarak ekle
+            try {
+                const targetId = activeOperator && activeOperator.id ? activeOperator.id : "";
+                const url = targetId ? `http://127.0.0.1:5000/api/gecmis/${targetId}` : `http://127.0.0.1:5000/api/gecmis`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.durum === "basarili" && data.kayitlar && data.kayitlar.length > 0) {
+                    mapMarkersLayer.clearLayers();
+                    const bounds = [];
+
+                    data.kayitlar.forEach(item => {
+                        const lat = parseFloat(item.enlem);
+                        const lon = parseFloat(item.boylam);
+
+                        if (!isNaN(lat) && !isNaN(lon)) {
+                            bounds.push([lat, lon]);
+                            const isHealthy = item.turkce_ad.toLowerCase().includes("sağlıklı");
+
+                            // Pin rengi ve şekli (HTML Marker)
+                            const markerColor = isHealthy ? '#10b981' : '#ef4444';
+                            const customIcon = L.divIcon({
+                                className: 'custom-div-icon',
+                                html: `<div style="background-color:${markerColor}; width:16px; height:16px; border-radius:50%; border:2.5px solid #ffffff; box-shadow:0 0 10px ${markerColor};"></div>`,
+                                iconSize: [16, 16],
+                                iconAnchor: [8, 8]
+                            });
+
+                            const popupHtml = `
+                                <div style="font-family:'Plus Jakarta Sans',sans-serif; min-width:180px;">
+                                    <div style="font-size:13px; font-weight:800; color:${markerColor}; margin-bottom:4px;">
+                                        ${item.turkce_ad}
+                                    </div>
+                                    <div style="font-size:11px; color:#cbd5e1; margin-bottom:2px;">
+                                        <strong>Tarih:</strong> ${item.tarih}
+                                    </div>
+                                    <div style="font-size:11px; color:#cbd5e1; margin-bottom:2px;">
+                                        <strong>Güven Skoru:</strong> %${item.guven_skoru}
+                                    </div>
+                                    <div style="font-size:11px; color:#cbd5e1; margin-bottom:2px;">
+                                        <strong>Mikroklima:</strong> ${item.sicaklik}°C / %${item.nem}
+                                    </div>
+                                    <div style="font-size:10px; color:#f59e0b; font-weight:700; margin-top:4px;">
+                                        ${item.risk_durumu}
+                                    </div>
+                                </div>
+                            `;
+
+                            L.marker([lat, lon], { icon: customIcon })
+                                .bindPopup(popupHtml)
+                                .addTo(mapMarkersLayer);
+                        }
+                    });
+
+                    if (bounds.length > 0) {
+                        leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+                    }
+                }
+            } catch (e) {
+                console.warn("Harita pinleri yüklenemedi:", e);
+            }
+        }
+
+        function downloadPdfReport() {
+            if (!lastDiagnosisResponse) {
+                alert("Lütfen önce bir yaprak analizi gerçekleştirin.");
+                return;
+            }
+
+            const rawImg = document.getElementById("rawLeafImg");
+            const camImg = document.getElementById("camHeatmapImg");
+            const data = lastDiagnosisResponse;
+
+            document.getElementById("pdfRawImg").src = rawImg.src;
+            document.getElementById("pdfCamImg").src = camImg.src || rawImg.src;
+            
+            const now = new Date();
+            document.getElementById("pdfDate").innerText = now.toLocaleString("tr-TR");
+            document.getElementById("pdfOperator").innerText = activeOperator ? activeOperator.name : "Saha Görevlisi";
+            document.getElementById("pdfGps").innerText = `${document.getElementById("inputLat").value}, ${document.getElementById("inputLon").value}`;
+
+            document.getElementById("pdfDiseaseName").innerText = data.teshis.turkce_ad;
+            document.getElementById("pdfSpecies").innerText = (data.tedavi_onerileri && data.tedavi_onerileri.bitki_turu) ? data.tedavi_onerileri.bitki_turu : "Belirtilmedi";
+            document.getElementById("pdfConfidence").innerText = data.teshis.guven_skoru;
+            document.getElementById("pdfTelemetry").innerText = `${data.cevre_ve_konum.olculen_sicaklik} / ${data.cevre_ve_konum.olculen_nem}`;
+            document.getElementById("pdfRiskText").innerText = data.cevre_ve_konum.karar_destek_uyarisi;
+
+            if (data.tedavi_onerileri) {
+                document.getElementById("pdfSymptoms").innerHTML = `<strong>Semptomlar:</strong> ${data.tedavi_onerileri.belirtiler || 'Belirtilmedi'}`;
+                document.getElementById("pdfBio").innerHTML = `<strong>Biyolojik & Kültürel Önlemler:</strong> ${data.tedavi_onerileri.biyolojik_tedavi || 'Belirtilmedi'}`;
+                document.getElementById("pdfChem").innerHTML = `<strong>Ruhsatlı Kimyasal Tedavi:</strong> ${data.tedavi_onerileri.kimyasal_tedavi || 'Belirtilmedi'}`;
+            }
+
+            const element = document.getElementById("pdfReportTemplate");
+            element.style.display = "block";
+
+            const opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     `PlantDoctorAI_Rapor_${data.teshis.turkce_ad.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.display = "none";
+            });
+        }
+
+        function saveSensorTelemetry() {
+            const t = document.getElementById("inputTemp").value;
+            const h = document.getElementById("inputHum").value;
+            document.getElementById("metaTemp").innerText = `${t} °C`;
+            document.getElementById("metaHumidity").innerText = `%${h}`;
+            alert("Saha mikroklima parametreleri güncellendi!");
+            navigateTo('tehis');
+        }
+
+        function toggleAuthModal() {
+            if (activeOperator) {
+                if (confirm(`"${activeOperator.name}" oturumu kapatılsın mı?`)) {
+                    localStorage.removeItem("plant_operator");
+                    activeOperator = null;
+                    refreshSessionUI();
+                    fetchUserHistory();
+                }
+                return;
+            }
+
+            const modal = document.getElementById("authModal");
+            if (!modal) return;
+            const isHidden = window.getComputedStyle(modal).display === "none";
+            modal.style.display = isHidden ? "flex" : "none";
+        }
+
+        function switchAuthMode(mode) {
+            const tLogin = document.getElementById("tabBtnLogin");
+            const tReg = document.getElementById("tabBtnRegister");
+            const fLogin = document.getElementById("loginFormArea");
+            const fReg = document.getElementById("registerFormArea");
+
+            if (mode === 'login') {
+                tLogin.classList.add("active");
+                tReg.classList.remove("active");
+                fLogin.style.display = "block";
+                fReg.style.display = "none";
+            } else {
+                tReg.classList.add("active");
+                tLogin.classList.remove("active");
+                fReg.style.display = "block";
+                fLogin.style.display = "none";
+            }
+        }
+
+        async function handleRegisterSubmit() {
+            const name = document.getElementById("authRegName").value.trim();
+            const email = document.getElementById("authRegEmail").value.trim();
+            const pass = document.getElementById("authRegPass").value.trim();
+
+            if (!name || !email || !pass) {
+                alert("Lütfen tüm alanları doldurun.");
+                return;
+            }
+
+            try {
+                const res = await fetch("http://127.0.0.1:5000/api/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tam_ad: name, email: email, sifre: pass })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.durum === "basarili") {
+                    alert("Kayıt başarılı! Oturum açıldı.");
+                    activeOperator = { id: data.user_id, name: data.tam_ad, email: data.email };
+                    localStorage.setItem("plant_operator", JSON.stringify(activeOperator));
+                    
+                    document.getElementById("authModal").style.display = "none";
+                    refreshSessionUI();
+                    fetchUserHistory();
+                } else {
+                    alert(data.mesaj || "Kayıt işlemi başarısız.");
+                }
+            } catch (err) {
+                console.error("Kayıt hatası:", err);
+                alert("Flask sunucusuna bağlanılamadı. Terminalde python app.py çalıştığından emin olun.");
+            }
+        }
+
+        async function handleLoginSubmit() {
+            const email = document.getElementById("authLoginEmail").value.trim();
+            const pass = document.getElementById("authLoginPass").value.trim();
+
+            if (!email || !pass) {
+                alert("Lütfen e-posta ve şifrenizi girin.");
+                return;
+            }
+
+            try {
+                const res = await fetch("http://127.0.0.1:5000/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email, sifre: pass })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.durum === "basarili") {
+                    activeOperator = { id: data.user_id, name: data.tam_ad, email: data.email };
+                    localStorage.setItem("plant_operator", JSON.stringify(activeOperator));
+                    
+                    document.getElementById("authModal").style.display = "none";
+                    refreshSessionUI();
+                    fetchUserHistory();
+                } else {
+                    alert(data.mesaj || "Geçersiz e-posta veya şifre.");
+                }
+            } catch (err) {
+                console.error("Giriş hatası:", err);
+                alert("Flask sunucusuna bağlanılamadı.");
+            }
+        }
+
+        async function fetchUserHistory(userId) {
+            const tbody = document.getElementById("historyTbody");
+            if (!tbody) return;
+
+            const targetId = userId || (activeOperator && activeOperator.id ? activeOperator.id : null);
+            const url = targetId 
+                ? `http://127.0.0.1:5000/api/gecmis/${targetId}`
+                : `http://127.0.0.1:5000/api/gecmis`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.durum === "basarili" && data.kayitlar && data.kayitlar.length > 0) {
+                    tbody.innerHTML = "";
+                    data.kayitlar.forEach(item => {
+                        const tr = document.createElement("tr");
+                        const isRisk = item.risk_durumu && (item.risk_durumu.includes("Yüksek") || item.risk_durumu.includes("KRİTİK"));
+                        tr.innerHTML = `
+                            <td>${item.tarih}</td>
+                            <td>${item.turkce_ad}</td>
+                            <td><span style="color: var(--brand-green); font-weight: 700;">%${item.guven_skoru}</span></td>
+                            <td>${item.sicaklik}°C / %${item.nem}</td>
+                            <td><span style="color: ${isRisk ? 'var(--danger-red)' : 'var(--brand-green)'}; font-weight: 700;">${item.risk_durumu}</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Henüz kayıtlı bir teşhis bulunmuyor.</td></tr>`;
+                }
+            } catch (err) {
+                console.warn("Geçmiş veritabanından çekilemedi:", err);
+            }
+        }
+
+        function refreshSessionUI() {
+            const label = document.getElementById("operatorNameText");
+            const btn = document.getElementById("btnAuthToggle");
+
+            if (activeOperator && activeOperator.name) {
+                label.innerText = activeOperator.name;
+                btn.innerText = "Çıkış Yap";
+            } else {
+                label.innerText = "Misafir Kullanıcı";
+                btn.innerText = "Giriş Yap";
+            }
+        }
+    </script>
+    <!-- DR. FLORA AKILLI ZİRAİ ASİSTAN -->
+    <script src="chatbot.js"></script>
+</body>
+</html>
+</body>
+</html>
